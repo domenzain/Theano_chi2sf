@@ -1,0 +1,1 @@
+import theano_chi2sf.elemwise_c
