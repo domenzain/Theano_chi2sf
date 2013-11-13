@@ -7,15 +7,29 @@
             2008.03.14 more incomplete Gamma functions added
             2008.03.15 table of factorials and logarithms added
             2008.03.17 gamma distribution functions added
+  Modification by Frederic Bastien:
+            2013.11.13 commented the gamma.h file as it is not needed.
+            2013.11.13 modification to make it work with CUDA
+
 ----------------------------------------------------------------------*/
-#if defined GAMMA_MAIN \
- || defined GAMMAPDF_MAIN \
- || defined GAMMACDF_MAIN \
- || defined GAMMAQTL_MAIN
+//For GPU support
+#ifdef __CUDACC__
+#define DEVICE __device__
+#else
+#define DEVICE
+#endif
+
+#ifndef _ISOC99_SOURCE
+#define _ISOC99_SOURCE
+#endif                          /* needed for function log1p() */
+#if defined(GAMMA_MAIN) \
+ || defined(GAMMAPDF_MAIN) \
+ || defined(GAMMACDF_MAIN) \
+ || defined(GAMMAQTL_MAIN)
 #include <stdio.h>
 #include <stdlib.h>
 #endif
-#if defined GAMMAQTL_MAIN && !defined GAMMAQTL
+#if defined(GAMMAQTL_MAIN) && !defined(GAMMAQTL)
 #define GAMMAQTL
 #endif
 #include <assert.h>
@@ -24,11 +38,7 @@
 #ifdef GAMMAQTL
 #include "normal.h"
 #endif
-#include "gamma.h"
-
-#ifndef INFINITY
-#define INFINITY     (DBL_MAX+DBL_MAX)
-#endif                          /* MSC still does not support C99 */
+//#include "gamma.h"
 
 /*----------------------------------------------------------------------
   Preprocessor Definitions
@@ -47,33 +57,33 @@
 /*----------------------------------------------------------------------
   Table of Factorials/Gamma Values
 ----------------------------------------------------------------------*/
-static double facts[MAXFACT+1] = { 0 };
-static double logfs[MAXFACT+1];
-static double halfs[MAXFACT+1];
-static double loghs[MAXFACT+1];
+DEVICE static double _facts[MAXFACT+1] = { 0 };
+DEVICE static double _logfs[MAXFACT+1];
+DEVICE static double _halfs[MAXFACT+1];
+DEVICE static double _loghs[MAXFACT+1];
 
 /*----------------------------------------------------------------------
   Functions
 ----------------------------------------------------------------------*/
 
-static void init (void)
+DEVICE static void _init (void)
 {                               /* --- init. factorial tables */
   int    i;                     /* loop variable */
   double x = 1;                 /* factorial */
 
-  facts[0] = facts[1] = 1;      /* store factorials for 0 and 1 */
-  logfs[0] = logfs[1] = 0;      /* and their logarithms */
+  _facts[0] = _facts[1] = 1;    /* store factorials for 0 and 1 */
+  _logfs[0] = _logfs[1] = 0;    /* and their logarithms */
   for (i = 1; ++i <= MAXFACT; ) {
-    facts[i] = x *= i;          /* initialize the factorial table */
-    logfs[i] = log(x);          /* and the table of their logarithms */
+    _facts[i] = x *= i;         /* initialize the factorial table */
+    _logfs[i] = log(x);         /* and the table of their logarithms */
   }
-  halfs[0] = x = SQRT_PI;       /* store Gamma(0.5) */
-  loghs[0] = 0.5*LN_PI;         /* and its logarithm */
+  _halfs[0] = x = SQRT_PI;      /* store Gamma(0.5) */
+  _loghs[0] = 0.5*LN_PI;        /* and its logarithm */
   for (i = 0; ++i < MAXFACT; ) {
-    halfs[i] = x *= i-0.5;      /* initialize the table for */
-    loghs[i] = log(x);          /* the Gamma function of half numbers */
+    _halfs[i] = x *= i-0.5;     /* initialize the table for */
+    _loghs[i] = log(x);         /* the Gamma function of half numbers */
   }                             /* and the table of their logarithms */
-}  /* init() */
+}  /* _init() */
 
 /*--------------------------------------------------------------------*/
 #if 0
@@ -83,12 +93,12 @@ double logGamma (double n)
   double s;                     /*           = ln((n-1)!), n \in IN */
 
   assert(n > 0);                /* check the function argument */
-  if (facts[0] <= 0) init();    /* initialize the tables */
+  if (_facts[0] <= 0) _init();  /* initialize the tables */
   if (n < MAXFACT +1 +4 *EPSILON) {
     if (fabs(  n -floor(  n)) < 4 *EPSILON)
-      return logfs[(int)floor(n)-1];
+      return _logfs[(int)floor(n)-1];
     if (fabs(2*n -floor(2*n)) < 4 *EPSILON)
-      return loghs[(int)floor(n)];
+      return _loghs[(int)floor(n)];
   }                             /* try to get the value from a table */
   s =  1.000000000190015        /* otherwise compute it */
     + 76.18009172947146      /(n+1)
@@ -102,17 +112,17 @@ double logGamma (double n)
 
 #else /*--------------------------------------------------------------*/
 
-double logGamma (double n)
+DEVICE double logGamma (double n)
 {                               /* --- compute ln(Gamma(n))         */
   double s;                     /*           = ln((n-1)!), n \in IN */
 
   assert(n > 0);                /* check the function argument */
-  if (facts[0] <= 0) init();    /* initialize the tables */
+  if (_facts[0] <= 0) _init();  /* initialize the tables */
   if (n < MAXFACT +1 +4 *EPSILON) {
     if (fabs(  n -floor(  n)) < 4 *EPSILON)
-      return logfs[(int)floor(n)-1];
+      return _logfs[(int)floor(n)-1];
     if (fabs(2*n -floor(2*n)) < 4 *EPSILON)
-      return loghs[(int)floor(n)];
+      return _loghs[(int)floor(n)];
   }                             /* try to get the value from a table */
   s =    0.99999999999980993227684700473478  /* otherwise compute it */
     +  676.520368121885098567009190444019 /(n+1)
@@ -148,22 +158,22 @@ For the choices gamma = 7, k = 8, and c_0 to c_8 as defined
 in the second version, the value is slightly more accurate.
 ----------------------------------------------------------------------*/
 
-double Gamma (double n)
+DEVICE double Gamma (double n)
 {                               /* --- compute Gamma(n) = (n-1)! */
   assert(n > 0);                /* check the function argument */
-  if (facts[0] <= 0) init();    /* initialize the tables */
+  if (_facts[0] <= 0) _init();  /* initialize the tables */
   if (n < MAXFACT +1 +4 *EPSILON) {
     if (fabs(  n -floor(  n)) < 4 *EPSILON)
-      return facts[(int)floor(n)-1];
+      return _facts[(int)floor(n)-1];
     if (fabs(2*n -floor(2*n)) < 4 *EPSILON)
-      return halfs[(int)floor(n)];
+      return _halfs[(int)floor(n)];
   }                             /* try to get the value from a table */
   return exp(logGamma(n));      /* compute through natural logarithm */
 }  /* Gamma() */
 
 /*--------------------------------------------------------------------*/
 
-static double series (double n, double x)
+DEVICE static double _series (double n, double x)
 {                               /* --- series approximation */
   int    i;                     /* loop variable */
   double t, sum;                /* buffers */
@@ -174,7 +184,7 @@ static double series (double n, double x)
     if (fabs(t) < fabs(sum) *EPSILON) break;
   }                             /* if term is small enough, abort */
   return sum;                   /* return the computed factor */
-}  /* series() */
+}  /* _series() */
 
 /*----------------------------------------------------------------------
 series approximation:
@@ -189,7 +199,7 @@ Source: W.H. Press, S.A. Teukolsky, W.T. Vetterling, and B.P. Flannery
 The factor exp(n *log(x) -x) is added in the functions below.
 ----------------------------------------------------------------------*/
 
-static double cfrac (double n, double x)
+DEVICE static double _cfrac (double n, double x)
 {                               /* --- continued fraction approx. */
   int    i;                     /* loop variable */
   double a, b, c, d, e, f;      /* buffers */
@@ -205,7 +215,7 @@ static double cfrac (double n, double x)
     if (fabs(e-1) < EPSILON) break;
   }                             /* if factor is small enough, abort */
   return f;                     /* return the computed factor */
-}  /* cfrac() */
+}  /* _cfrac() */
 
 /*----------------------------------------------------------------------
 continued fraction approximation:
@@ -221,38 +231,38 @@ Source: W.H. Press, S.A. Teukolsky, W.T. Vetterling, and B.P. Flannery
 The factor exp(n *log(x) -x) is added in the functions below.
 ----------------------------------------------------------------------*/
 
-double lowerGamma (double n, double x)
+DEVICE double lowerGamma (double n, double x)
 {                               /* --- lower incomplete Gamma fn. */
   assert((n > 0) && (x > 0));   /* check the function arguments */
-  return series(n, x) *exp(n *log(x) -x);
+  return _series(n, x) *exp(n *log(x) -x);
 }  /* lowerGamma() */
 
 /*--------------------------------------------------------------------*/
 
-double upperGamma (double n, double x)
+DEVICE double upperGamma (double n, double x)
 {                               /* --- upper incomplete Gamma fn. */
   assert((n > 0) && (x > 0));   /* check the function arguments */
-  return cfrac(n, x) *exp(n *log(x) -x);
+  return _cfrac(n, x) *exp(n *log(x) -x);
 }  /* upperGamma() */
 
 /*--------------------------------------------------------------------*/
 
-double GammaP (double n, double x)
+DEVICE double GammaP (double n, double x)
 {                               /* --- regularized Gamma function P */
   assert((n > 0) && (x >= 0));  /* check the function arguments */
   if (x <=  0) return 0;        /* treat x = 0 as a special case */
-  if (x < n+1) return series(n, x) *exp(n *log(x) -x -logGamma(n));
-  return 1 -cfrac(n, x) *exp(n *log(x) -x -logGamma(n));
+  if (x < n+1) return _series(n, x) *exp(n *log(x) -x -logGamma(n));
+  return 1 -_cfrac(n, x) *exp(n *log(x) -x -logGamma(n));
 }  /* GammaP() */
 
 /*--------------------------------------------------------------------*/
 
-double GammaQ (double n, double x)
+DEVICE double GammaQ (double n, double x)
 {                               /* --- regularized Gamma function Q */
   assert((n > 0) && (x >= 0));  /* check the function arguments */
   if (x <=  0) return 1;        /* treat x = 0 as a special case */
-  if (x < n+1) return 1 -series(n, x) *exp(n *log(x) -x -logGamma(n));
-  return cfrac(n, x) *exp(n *log(x) -x -logGamma(n));
+  if (x < n+1) return 1 -_series(n, x) *exp(n *log(x) -x -logGamma(n));
+  return _cfrac(n, x) *exp(n *log(x) -x -logGamma(n));
 }  /* GammaQ() */
 
 /*----------------------------------------------------------------------
@@ -261,7 +271,7 @@ P(k/2,x/2), where k is a natural number, is the cumulative distribution
 function (cdf) of a chi^2 distribution with k degrees of freedom.
 ----------------------------------------------------------------------*/
 
-double Gammapdf (double x, double k, double theta)
+DEVICE double Gammapdf (double x, double k, double theta)
 {                               /* --- probability density function */
   assert((k > 0) && (theta > 0));
   if (x <  0) return 0;         /* support is non-negative x */
@@ -273,14 +283,14 @@ double Gammapdf (double x, double k, double theta)
 /*--------------------------------------------------------------------*/
 #ifdef GAMMAQTL
 
-double GammaqtlP (double prob, double k, double theta)
+DEVICE double GammaqtlP (double prob, double k, double theta)
 {                               /* --- quantile of Gamma distribution */
   int    n = 0;                 /* loop variable */
   double x, f, a, d, dx, dp;    /* buffers */
 
   assert((k > 0) && (theta > 0) /* check the function arguments */
       && (prob >= 0) && (prob <= 1));
-  if (prob >= 1.0) return INFINITY;
+  if (prob >= 1.0) return DBL_MAX;
   if (prob <= 0.0) return 0;    /* handle limiting values */
   if      (prob < 0.05) x = exp(logGamma(k) +log(prob) /k);
   else if (prob > 0.95) x = logGamma(k) -log1p(-prob);
@@ -305,14 +315,14 @@ double GammaqtlP (double prob, double k, double theta)
 
 /*--------------------------------------------------------------------*/
 
-double GammaqtlQ (double prob, double k, double theta)
+DEVICE double GammaqtlQ (double prob, double k, double theta)
 {                               /* --- quantile of Gamma distribution */
   int    n = 0;                 /* loop variable */
   double x, f, a, d, dx, dp;    /* buffers */
 
   assert((k > 0) && (theta > 0) /* check the function arguments */
       && (prob >= 0) && (prob <= 1));
-  if (prob <= 0.0) return INFINITY;
+  if (prob <= 0.0) return DBL_MAX;
   if (prob >= 1.0) return 0;    /* handle limiting values */
   if      (prob < 0.05) x = logGamma(k) -log(prob);
   else if (prob > 0.95) x = exp(logGamma(k) +log1p(-prob) /k);
