@@ -5,3 +5,6 @@ we keep them in a separate repository.
 Currently, you just need to import the module before compilation
 Theano function in your script to have the speed up provided by the
 code here. All the rest is automatic.
+
+Currently this provide c code for the elemwise operation chi2sf. It
+work on CUDA.
