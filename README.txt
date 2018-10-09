@@ -8,3 +8,11 @@ code here. All the rest is automatic.
 
 Currently this provide c code for the elemwise operation chi2sf. It
 work on CUDA.
+
+To install for the current user:
+
+    pip install --user git+git://github.com/domenzain/Theano_chi2sf.git
+
+To install in the os:
+
+    pip install git+git://github.com/domenzain/Theano_chi2sf.git
