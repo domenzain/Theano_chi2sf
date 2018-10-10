@@ -63,20 +63,20 @@ class CChi2SF(BinaryScalarOp):
 cchi2sf = CChi2SF(upgrade_to_float, name='cchi2sf')
 
 
-class GammaP(BinaryScalarOp):
+class GammaInc(BinaryScalarOp):
     """
-    Compute the regularized Gamma P function.
+    Compute the regularized lower gamma function (P).
     """
 
     @staticmethod
     def st_impl(k, x):
-        return scipy.stats.chi2.sf(k, x)
+        return scipy.special.gammainc(k, x)
 
     def impl(self, k, x):
         if imported_scipy_special:
-            return GammaP.st_impl(k, x)
+            return GammaInc.st_impl(k, x)
         else:
-            super(GammaP, self).impl(k, x)
+            super(GammaInc, self).impl(k, x)
 
     def c_support_code(self):
         f = open(os.path.join(os.path.split(__file__)[0], 'gamma.c'))
@@ -97,25 +97,23 @@ class GammaP(BinaryScalarOp):
 
     def __hash__(self):
         return hash(type(self))
+gammainc = GammaInc(upgrade_to_float, name='gammainc')
 
 
-gammap = GammaP(upgrade_to_float, name='gammap')
-
-
-class GammaQ(BinaryScalarOp):
+class GammaIncC(BinaryScalarOp):
     """
-    Compute the regularized Gamma Q function.
+    Compute the regularized upper gamma function (Q).
     """
 
     @staticmethod
     def st_impl(k, x):
-        return scipy.stats.chi2.sf(x, k)
+        return scipy.special.gammaincc(x, k)
 
     def impl(self, k, x):
         if imported_scipy_special:
-            return GammaQ.st_impl(k, x)
+            return GammaIncC.st_impl(k, x)
         else:
-            super(GammaQ, self).impl(k, x)
+            super(GammaIncC, self).impl(k, x)
 
     def c_support_code(self):
         f = open(os.path.join(os.path.split(__file__)[0], 'gamma.c'))
@@ -136,19 +134,17 @@ class GammaQ(BinaryScalarOp):
 
     def __hash__(self):
         return hash(type(self))
-
-
-gammaq = GammaQ(upgrade_to_float, name='gammaq')
+gammaincc = GammaIncC(upgrade_to_float, name='gammaincc')
 
 
 class GammaU(BinaryScalarOp):
     """
-    Compute the upper incomplete Gamma function.
+    Compute the upper incomplete gamma function.
     """
 
     @staticmethod
     def st_impl(k, x):
-        return scipy.stats.chi2.sf(x, k)
+        return scipy.special.gammaincc(k, x) * scipy.special.gamma(k)
 
     def impl(self, k, x):
         if imported_scipy_special:
@@ -175,19 +171,17 @@ class GammaU(BinaryScalarOp):
 
     def __hash__(self):
         return hash(type(self))
-
-
 gammau = GammaU(upgrade_to_float, name='gammau')
 
 
 class GammaL(BinaryScalarOp):
     """
-    Compute the lower incomplete Gamma function.
+    Compute the lower incomplete gamma function.
     """
 
     @staticmethod
     def st_impl(k, x):
-        return scipy.stats.chi2.sf(x, k)
+        return scipy.special.gammainc(k, x) * scipy.special.gamma(k)
 
     def impl(self, k, x):
         if imported_scipy_special:
@@ -214,6 +208,4 @@ class GammaL(BinaryScalarOp):
 
     def __hash__(self):
         return hash(type(self))
-
-
 gammal = GammaL(upgrade_to_float, name='gammal')
