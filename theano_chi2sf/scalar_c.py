@@ -59,4 +59,161 @@ class CChi2SF(BinaryScalarOp):
     def __hash__(self):
         return hash(type(self))
 
+
 cchi2sf = CChi2SF(upgrade_to_float, name='cchi2sf')
+
+
+class GammaP(BinaryScalarOp):
+    """
+    Compute the regularized Gamma P function.
+    """
+
+    @staticmethod
+    def st_impl(k, x):
+        return scipy.stats.chi2.sf(k, x)
+
+    def impl(self, k, x):
+        if imported_scipy_special:
+            return GammaP.st_impl(k, x)
+        else:
+            super(GammaP, self).impl(k, x)
+
+    def c_support_code(self):
+        f = open(os.path.join(os.path.split(__file__)[0], 'gamma.c'))
+        raw = f.read()
+        return raw
+
+    def c_code(self, node, name, inp, out, sub):
+        k, x = inp
+        z, = out
+        if node.inputs[0].type in float_types:
+            dtype = 'npy_' + node.outputs[0].dtype
+            return """%(z)s =
+                (%(dtype)s) GammaP(%(k)s, %(x)s);""" % locals()
+        raise NotImplementedError('only floatingpoint is implemented')
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))
+
+
+gammap = GammaP(upgrade_to_float, name='gammap')
+
+
+class GammaQ(BinaryScalarOp):
+    """
+    Compute the regularized Gamma Q function.
+    """
+
+    @staticmethod
+    def st_impl(k, x):
+        return scipy.stats.chi2.sf(x, k)
+
+    def impl(self, k, x):
+        if imported_scipy_special:
+            return GammaQ.st_impl(k, x)
+        else:
+            super(GammaQ, self).impl(k, x)
+
+    def c_support_code(self):
+        f = open(os.path.join(os.path.split(__file__)[0], 'gamma.c'))
+        raw = f.read()
+        return raw
+
+    def c_code(self, node, name, inp, out, sub):
+        k, x = inp
+        z, = out
+        if node.inputs[0].type in float_types:
+            dtype = 'npy_' + node.outputs[0].dtype
+            return """%(z)s =
+                (%(dtype)s) GammaQ(%(k)s, %(x)s);""" % locals()
+        raise NotImplementedError('only floatingpoint is implemented')
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))
+
+
+gammaq = GammaQ(upgrade_to_float, name='gammaq')
+
+
+class GammaU(BinaryScalarOp):
+    """
+    Compute the upper incomplete Gamma function.
+    """
+
+    @staticmethod
+    def st_impl(k, x):
+        return scipy.stats.chi2.sf(x, k)
+
+    def impl(self, k, x):
+        if imported_scipy_special:
+            return GammaU.st_impl(k, x)
+        else:
+            super(GammaU, self).impl(k, x)
+
+    def c_support_code(self):
+        f = open(os.path.join(os.path.split(__file__)[0], 'gamma.c'))
+        raw = f.read()
+        return raw
+
+    def c_code(self, node, name, inp, out, sub):
+        k, x = inp
+        z, = out
+        if node.inputs[0].type in float_types:
+            dtype = 'npy_' + node.outputs[0].dtype
+            return """%(z)s =
+                (%(dtype)s) upperGamma(%(k)s, %(x)s);""" % locals()
+        raise NotImplementedError('only floatingpoint is implemented')
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))
+
+
+gammau = GammaU(upgrade_to_float, name='gammau')
+
+
+class GammaL(BinaryScalarOp):
+    """
+    Compute the lower incomplete Gamma function.
+    """
+
+    @staticmethod
+    def st_impl(k, x):
+        return scipy.stats.chi2.sf(x, k)
+
+    def impl(self, k, x):
+        if imported_scipy_special:
+            return GammaL.st_impl(k, x)
+        else:
+            super(GammaL, self).impl(k, x)
+
+    def c_support_code(self):
+        f = open(os.path.join(os.path.split(__file__)[0], 'gamma.c'))
+        raw = f.read()
+        return raw
+
+    def c_code(self, node, name, inp, out, sub):
+        k, x = inp
+        z, = out
+        if node.inputs[0].type in float_types:
+            dtype = 'npy_' + node.outputs[0].dtype
+            return """%(z)s =
+                (%(dtype)s) lowerGamma(%(k)s, %(x)s);""" % locals()
+        raise NotImplementedError('only floatingpoint is implemented')
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))
+
+
+gammal = GammaL(upgrade_to_float, name='gammal')

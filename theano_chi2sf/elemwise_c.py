@@ -17,7 +17,12 @@ except (ImportError, ValueError):
 
 import scalar_c
 
+
 cchi2sf = tensor.elemwise.Elemwise(scalar_c.cchi2sf, name="cchi2sf")
+gammap = tensor.elemwise.Elemwise(scalar_c.gammap, name="gammap")
+gammaq = tensor.elemwise.Elemwise(scalar_c.gammaq, name="gammaq")
+gammal = tensor.elemwise.Elemwise(scalar_c.gammal, name="gammal")
+gammau = tensor.elemwise.Elemwise(scalar_c.gammau, name="gammau")
 
 
 @register_specialize
